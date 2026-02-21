@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'Frontend is static HTML'",
+  "outputDirectory": "frontend",
+  "installCommand": "echo 'No dependencies needed'",
+  "env": {
+    "PYTHONUNBUFFERED": "1"
+  },
+  "builds": [
+    {
+      "src": "frontend/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "backend/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/index.html"
+    }
+  ]
+}
