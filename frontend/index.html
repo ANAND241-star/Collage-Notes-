@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NoteVault — College Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#080B14;--bg2:#0C1020;--panel:#0F1525;
+  --card:#141928;--card2:#1A2035;--border:#1E2640;
+  --accent:#6C63FF;--accent2:#FF6584;--accent3:#43E8D8;
+  --gold:#FFD166;--text:#E8EBF8;--sub:#5A6282;
+  --muted:#2E3554;--success:#06D6A0;--danger:#FF6B6B;
+  --warn:#FFD166;--shadow:rgba(0,0,0,0.5);
+  --font-display:'Playfair Display',serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#F4F6FF;--bg2:#ECEFFE;--panel:#E5E9FA;
+  --card:#FFFFFF;--card2:#EEF1FF;--border:#C8D0EE;
+  --accent:#5B52E8;--accent2:#E84F6B;--accent3:#0EBAAA;
+  --gold:#C9920A;--text:#181C38;--sub:#6870A0;
+  --muted:#C5CCED;--success:#047A5C;--danger:#C94040;
+  --warn:#A86800;--shadow:rgba(0,0,0,0.1);
+}
+html,body,#root{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);overflow:hidden;transition:background .3s,color .3s;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:translateX(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(110px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(110px)}}
+@keyframes savePulse{0%{box-shadow:0 0 0 0 rgba(108,99,255,.6)}70%{box-shadow:0 0 0 10px rgba(108,99,255,0)}100%{box-shadow:0 0 0 0 rgba(108,99,255,0)}}
+@keyframes autosaveDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 6px var(--accent))}50%{filter:drop-shadow(0 0 16px var(--accent))}}
+@keyframes dropIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes uploadPulse{0%,100%{border-color:var(--accent);box-shadow:0 0 0 0 rgba(108,99,255,.3)}50%{border-color:var(--accent3);box-shadow:0 0 0 6px rgba(108,99,255,0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.app{display:flex;flex-direction:column;height:100vh;}
+
+/* ══ TOPBAR ══ */
+.topbar{display:flex;align-items:center;gap:12px;padding:0 16px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:200;animation:fadeIn .5s ease;}
+.topbar-logo{display:flex;align-items:center;gap:9px;text-decoration:none;cursor:pointer;}
+.logo-icon{width:34px;height:34px;flex-shrink:0;animation:logoPulse 3s ease-in-out infinite;}
+.logo-text-wrap{display:flex;flex-direction:column;line-height:1;}
+.logo-title{font-size:1.05rem;font-weight:900;letter-spacing:-.5px;color:var(--text);font-family:var(--font-display);}
+.logo-sub{font-size:.52rem;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--sub);margin-top:1px;}
+.beta{font-size:.54rem;font-weight:700;background:var(--accent);color:#fff;padding:2px 5px;border-radius:4px;letter-spacing:1px;text-transform:uppercase;align-self:flex-start;margin-left:2px;}
+
+.nav-tabs{display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:3px;}
+.nav-tab{padding:5px 14px;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--sub);transition:all .2s;display:flex;align-items:center;gap:5px;}
+.nav-tab:hover{color:var(--text);background:var(--card2);}
+.nav-tab.active{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(108,99,255,.4);}
+
+.search-wrap{display:flex;align-items:center;gap:7px;flex:1;max-width:260px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0 11px;transition:border-color .2s;}
+.search-wrap:focus-within{border-color:var(--accent);}
+.search-wrap input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--font-body);font-size:.83rem;padding:7px 0;}
+.search-wrap input::placeholder{color:var(--sub);}
+
+.autosave-indicator{display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--sub);font-family:var(--font-mono);}
+.autosave-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:autosaveDot 1.5s ease infinite;}
+.autosave-dot.saving{background:var(--gold);}
+.autosave-dot.idle{background:var(--sub);animation:none;}
+
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.clock{font-family:var(--font-mono);font-size:.7rem;color:var(--sub);}
+.stats-pill{background:var(--card);border:1px solid var(--border);padding:4px 9px;border-radius:20px;font-size:.68rem;color:var(--accent);font-weight:600;}
+
+.theme-toggle{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:.73rem;font-weight:600;color:var(--text);transition:all .2s;white-space:nowrap;}
+.theme-toggle:hover{border-color:var(--accent);}
+.toggle-track{width:30px;height:16px;border-radius:20px;background:var(--muted);position:relative;transition:background .3s;flex-shrink:0;}
+[data-theme="light"] .toggle-track{background:var(--accent);}
+.toggle-thumb{width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+[data-theme="light"] .toggle-thumb{transform:translateX(14px);}
+
+.topbar-actions{display:flex;gap:5px;}
+.btn-topbar{display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:5px 9px;cursor:pointer;font-family:var(--font-body);font-size:.72rem;font-weight:600;color:var(--text);transition:all .15s;white-space:nowrap;}
+.btn-topbar:hover{background:var(--card2);border-color:var(--accent);transform:scale(1.03);}
+.btn-topbar.export{color:var(--accent3);border-color:rgba(67,232,216,.25);}
+.btn-topbar.import{color:var(--gold);border-color:rgba(255,209,102,.25);}
+
+.body{display:flex;flex:1;overflow:hidden;}
+
+/* ══ LEFT NAV SIDEBAR ══ */
+.nav-sidebar{width:52px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;}
+.nav-icon-btn{width:38px;height:38px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;color:var(--sub);transition:all .2s;position:relative;}
+.nav-icon-btn:hover{background:var(--card);color:var(--text);}
+.nav-icon-btn.active{background:var(--accent);color:#fff;box-shadow:0 3px 12px rgba(108,99,255,.4);}
+.nav-icon-btn .tooltip{position:absolute;left:calc(100% + 10px);background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.7rem;font-weight:600;white-space:nowrap;padding:4px 9px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:500;}
+.nav-icon-btn:hover .tooltip{opacity:1;}
+.nav-divider{width:28px;height:1px;background:var(--border);margin:4px 0;}
+
+/* ══ DASHBOARD ══ */
+.dashboard{flex:1;overflow-y:auto;padding:24px 28px;background:var(--bg);animation:fadeIn .4s ease;}
+.dash-greeting{margin-bottom:24px;animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both;}
+.dash-greeting h1{font-family:var(--font-display);font-size:1.9rem;font-weight:900;color:var(--text);line-height:1.15;}
+.dash-greeting p{color:var(--sub);font-size:.87rem;margin-top:4px;}
+.greeting-day{color:var(--accent);}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;animation:fadeUp .45s cubic-bezier(.16,1,.3,1) both;transition:transform .2s,border-color .2s;}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+.stat-card::before{content:"";position:absolute;inset:0;opacity:.05;background:radial-gradient(ellipse at top right,var(--c) 0%,transparent 70%);pointer-events:none;}
+.stat-card-icon{font-size:1.5rem;margin-bottom:10px;display:block;}
+.stat-card-value{font-size:2rem;font-weight:900;font-family:var(--font-display);color:var(--text);line-height:1;}
+.stat-card-label{font-size:.72rem;color:var(--sub);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px;}
+.stat-card-trend{position:absolute;top:14px;right:16px;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:20px;}
+.trend-up{background:rgba(6,214,160,.15);color:var(--success);}
+.trend-new{background:rgba(108,99,255,.15);color:var(--accent);}
+.dash-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;}
+.dash-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.dash-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both;}
+.dash-card-header{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.dash-card-title{font-size:.8rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;}
+.dash-card-body{padding:16px 18px;}
+.dash-card-badge{font-size:.65rem;font-weight:700;background:var(--card2);color:var(--sub);border:1px solid var(--border);padding:2px 8px;border-radius:20px;}
+.recent-note-item{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.recent-note-item:last-child{border-bottom:none;}
+.recent-note-item:hover .rni-title{color:var(--accent);}
+.rni-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.rni-info{flex:1;min-width:0;}
+.rni-title{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s;}
+.rni-path{font-size:.67rem;color:var(--sub);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rni-date{font-size:.63rem;color:var(--sub);font-family:var(--font-mono);flex-shrink:0;}
+.subj-bar-item{margin-bottom:14px;}
+.subj-bar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.subj-bar-name{font-size:.8rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;}
+.subj-bar-count{font-size:.7rem;color:var(--sub);font-family:var(--font-mono);}
+.bar-track{height:6px;background:var(--muted);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;transition:width .8s cubic-bezier(.16,1,.3,1);}
+.heatmap-grid{display:flex;gap:3px;flex-wrap:wrap;}
+.heatmap-cell{width:12px;height:12px;border-radius:3px;background:var(--muted);transition:transform .15s;}
+.heatmap-cell:hover{transform:scale(1.3);}
+.heatmap-cell.l1{background:rgba(108,99,255,.25);}
+.heatmap-cell.l2{background:rgba(108,99,255,.5);}
+.heatmap-cell.l3{background:rgba(108,99,255,.75);}
+.heatmap-cell.l4{background:var(--accent);}
+.heatmap-labels{display:flex;justify-content:space-between;margin-top:6px;font-size:.6rem;color:var(--sub);}
+.ring-wrap{display:flex;align-items:center;justify-content:center;gap:20px;}
+.ring-legend{display:flex;flex-direction:column;gap:8px;}
+.ring-legend-item{display:flex;align-items:center;gap:7px;font-size:.75rem;}
+.ring-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ring-legend-label{color:var(--sub);}
+.ring-legend-val{font-weight:700;color:var(--text);margin-left:auto;padding-left:10px;}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.qa-btn{display:flex;align-items:center;gap:9px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all .2s;text-align:left;}
+.qa-btn:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 16px var(--shadow);}
+.qa-btn-icon{font-size:1.2rem;flex-shrink:0;}
+.qa-btn-text{font-size:.76rem;font-weight:600;color:var(--text);line-height:1.3;}
+.qa-btn-sub{font-size:.64rem;color:var(--sub);margin-top:1px;}
+.streak-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.streak-row:last-child{border-bottom:none;}
+.streak-icon{font-size:1.1rem;flex-shrink:0;}
+.streak-info{flex:1;}
+.streak-label{font-size:.78rem;font-weight:600;color:var(--text);}
+.streak-sub{font-size:.66rem;color:var(--sub);margin-top:1px;}
+.streak-val{font-size:1rem;font-weight:900;font-family:var(--font-display);color:var(--accent);}
+.tags-cloud{display:flex;flex-wrap:wrap;gap:6px;}
+.tag-bubble{padding:4px 11px;border-radius:20px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+.tag-bubble:hover{transform:scale(1.07);}
+.dash-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;color:var(--sub);font-size:.82rem;text-align:center;gap:8px;}
+.dash-empty-icon{font-size:2rem;opacity:.5;}
+
+/* ══ NOTES APP LAYOUT ══ */
+.notes-app{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR SUBJECTS ── */
+.sidebar{width:195px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-header{padding:11px 12px 6px;font-size:.61rem;font-weight:700;letter-spacing:2px;color:var(--sub);text-transform:uppercase;}
+.sidebar-section{display:flex;align-items:center;gap:5px;padding:0 9px 8px;}
+.sidebar-section input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:6px 8px;color:var(--text);font-family:var(--font-body);font-size:.79rem;outline:none;transition:border-color .2s;min-width:0;}
+.sidebar-section input:focus{border-color:var(--accent);}
+.sidebar-section input::placeholder{color:var(--sub);}
+.btn-icon{background:var(--accent);color:#fff;border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:1rem;font-weight:700;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.btn-icon:hover{background:#5549e0;transform:scale(1.08);}
+.divider{height:1px;background:var(--border);margin:0 9px 6px;}
+.subj-list{flex:1;overflow-y:auto;padding:2px 6px 10px;}
+.subj-item{display:flex;align-items:center;border-radius:8px;margin-bottom:2px;cursor:pointer;overflow:hidden;transition:background .15s;animation:slideIn .3s cubic-bezier(.16,1,.3,1) both;}
+.subj-item:hover{background:var(--card);}
+.subj-item.active{background:var(--card2);}
+.subj-dot{width:3px;flex-shrink:0;align-self:stretch;border-radius:3px 0 0 3px;}
+.subj-item-inner{padding:7px 8px;flex:1;min-width:0;}
+.subj-name{font-size:.81rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.subj-item.active .subj-name{color:var(--accent);}
+.subj-count{font-size:.64rem;color:var(--sub);margin-top:1px;}
+.subj-del{background:none;border:none;cursor:pointer;color:var(--sub);font-size:.68rem;padding:7px 7px;opacity:0;transition:opacity .15s,color .15s;}
+.subj-item:hover .subj-del{opacity:1;}
+.subj-del:hover{color:var(--danger);}
+.empty-hint{text-align:center;padding:22px 10px;color:var(--sub);font-size:.77rem;line-height:1.7;}
+
+/* ── CHAPTER PANEL ── */
+.chapter-panel{width:178px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.chapter-header{padding:11px 11px 6px;font-size:.61rem;font-weight:700;letter-spacing:2px;color:var(--sub);text-transform:uppercase;}
+.chapter-input-row{display:flex;gap:5px;padding:0 8px 8px;}
+.chapter-input-row input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px 7px;color:var(--text);font-family:var(--font-body);font-size:.77rem;outline:none;transition:border-color .2s;min-width:0;}
+.chapter-input-row input:focus{border-color:var(--accent2);}
+.chapter-input-row input::placeholder{color:var(--sub);}
+.btn-icon-sm{background:var(--accent2);color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .2s,transform .1s;}
+.btn-icon-sm:hover{opacity:.85;transform:scale(1.08);}
+.chapter-list{flex:1;overflow-y:auto;padding:2px 6px 10px;}
+.chapter-item{display:flex;align-items:center;border-radius:7px;margin-bottom:2px;cursor:pointer;overflow:hidden;transition:background .15s;animation:slideIn .3s cubic-bezier(.16,1,.3,1) both;padding:6px 7px;gap:6px;}
+.chapter-item:hover{background:var(--card);}
+.chapter-item.active{background:var(--card);border-left:2px solid var(--accent2);}
+.chapter-icon{font-size:.82rem;flex-shrink:0;}
+.chapter-item-inner{flex:1;min-width:0;}
+.chapter-name{font-size:.79rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chapter-item.active .chapter-name{color:var(--accent2);}
+.chapter-notes-count{font-size:.62rem;color:var(--sub);margin-top:1px;}
+.chapter-del{background:none;border:none;cursor:pointer;color:var(--sub);font-size:.63rem;opacity:0;transition:opacity .15s,color .15s;flex-shrink:0;}
+.chapter-item:hover .chapter-del{opacity:1;}
+.chapter-del:hover{color:var(--danger);}
+
+/* ── NOTES LIST ── */
+.mid-panel{width:248px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.mid-header{padding:11px 10px 5px;display:flex;align-items:center;justify-content:space-between;}
+.mid-title{font-family:var(--font-display);font-size:.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px;}
+.btn-new-note{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:5px 9px;cursor:pointer;font-family:var(--font-body);font-size:.71rem;font-weight:600;transition:background .2s,transform .1s;white-space:nowrap;}
+.btn-new-note:hover{background:#5549e0;transform:scale(1.04);}
+.btn-new-note:disabled{opacity:.4;cursor:not-allowed;}
+.note-count{padding:0 10px 4px;font-size:.63rem;color:var(--sub);}
+.notes-list{flex:1;overflow-y:auto;padding:4px 6px 12px;}
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:5px;cursor:pointer;transition:border-color .15s,background .15s,transform .15s;animation:fadeUp .3s cubic-bezier(.16,1,.3,1) both;}
+.note-card:hover{border-color:var(--accent);background:var(--card2);transform:translateY(-1px);}
+.note-card.active{border-color:var(--accent);background:var(--card2);box-shadow:0 0 0 1px var(--accent);}
+.note-card-title{font-size:.83rem;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.note-card.active .note-card-title{color:var(--accent);}
+.note-card-snippet{font-size:.69rem;color:var(--sub);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;}
+.note-card-footer{display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;}
+.note-tags{display:flex;gap:3px;flex-wrap:wrap;}
+.tag-chip{background:var(--muted);color:var(--accent3);font-size:.59rem;padding:1px 5px;border-radius:4px;font-weight:500;}
+.note-date{font-size:.59rem;color:var(--sub);font-family:var(--font-mono);}
+
+/* ── EDITOR PANEL ── */
+.editor-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.breadcrumb{display:flex;align-items:center;gap:5px;padding:5px 13px;font-size:.68rem;color:var(--sub);background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;font-family:var(--font-mono);}
+.breadcrumb-sep{color:var(--border);font-size:.8rem;}
+.breadcrumb-item.active{color:var(--accent);font-weight:600;}
+
+/* ── EDITOR TOOLBAR ── */
+.editor-toolbar{display:flex;align-items:center;gap:5px;padding:7px 11px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;}
+.title-input-wrap{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0 11px;transition:border-color .2s;}
+.title-input-wrap:focus-within{border-color:var(--accent);}
+.title-input{width:100%;background:none;border:none;outline:none;color:var(--text);font-family:var(--font-display);font-size:.93rem;padding:7px 0;}
+.title-input::placeholder{color:var(--sub);}
+.title-input:disabled{opacity:.4;cursor:not-allowed;}
+.fmt-group{display:flex;gap:3px;}
+.fmt-btn{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.76rem;font-family:var(--font-body);font-weight:600;transition:all .15s;}
+.fmt-btn:hover{background:var(--card2);border-color:var(--accent);transform:scale(1.05);}
+.fmt-btn.highlight{background:rgba(255,209,102,.1);color:var(--gold);border-color:rgba(255,209,102,.3);}
+.fmt-btn.bullet{color:var(--accent3);}
+
+/* Media upload button */
+.btn-media{background:rgba(67,232,216,.1);color:var(--accent3);border:1px solid rgba(67,232,216,.3);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:var(--font-body);font-size:.74rem;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.btn-media:hover{background:rgba(67,232,216,.18);transform:scale(1.05);}
+.btn-media:disabled{opacity:.4;cursor:not-allowed;}
+
+.btn-save{background:var(--success);color:#fff;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;font-family:var(--font-body);font-size:.76rem;font-weight:700;transition:all .2s;}
+.btn-save:hover{opacity:.85;transform:scale(1.04);}
+.btn-save.pulse{animation:savePulse .5s ease;}
+.btn-save:disabled{opacity:.4;cursor:not-allowed;}
+.btn-delete{background:rgba(255,107,107,.1);color:var(--danger);border:1px solid rgba(255,107,107,.3);border-radius:7px;padding:5px 9px;cursor:pointer;font-family:var(--font-body);font-size:.76rem;font-weight:600;transition:all .15s;}
+.btn-delete:hover{background:rgba(255,107,107,.2);transform:scale(1.04);}
+.btn-delete:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ══ DOWNLOAD BUTTON + DROPDOWN ══ */
+.download-wrap{position:relative;}
+.btn-download{display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--accent),#8B5CF6);color:#fff;border:none;border-radius:7px;padding:5px 11px;cursor:pointer;font-family:var(--font-body);font-size:.76rem;font-weight:700;transition:all .2s;white-space:nowrap;box-shadow:0 2px 10px rgba(108,99,255,.35);}
+.btn-download:hover{transform:scale(1.04);box-shadow:0 4px 18px rgba(108,99,255,.5);}
+.btn-download:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+.btn-download svg{transition:transform .2s;}
+.btn-download.open svg{transform:rotate(180deg);}
+
+.download-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:6px;min-width:190px;z-index:9000;animation:dropIn .2s cubic-bezier(.16,1,.3,1) both;box-shadow:0 12px 40px var(--shadow);}
+.download-dropdown-title{font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--sub);padding:4px 10px 8px;}
+.dl-option{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;transition:background .15s;}
+.dl-option:hover{background:var(--card);}
+.dl-option-icon{font-size:1.2rem;flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;}
+.dl-option-icon.pdf{background:rgba(255,107,107,.15);}
+.dl-option-icon.word{background:rgba(67,160,255,.15);}
+.dl-option-info{flex:1;}
+.dl-option-label{font-size:.8rem;font-weight:700;color:var(--text);}
+.dl-option-sub{font-size:.64rem;color:var(--sub);margin-top:1px;}
+.dl-loading{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:.78rem;color:var(--sub);}
+.dl-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+
+.tag-bar{display:flex;align-items:center;gap:8px;padding:5px 13px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tag-bar-label{font-size:.68rem;color:var(--sub);white-space:nowrap;}
+.tag-bar-input{flex:1;background:none;border:none;outline:none;color:var(--accent);font-size:.71rem;font-family:var(--font-mono);}
+.tag-bar-input::placeholder{color:var(--muted);}
+.tag-bar-input:disabled{opacity:.4;}
+.wcount{font-size:.67rem;color:var(--sub);white-space:nowrap;font-family:var(--font-mono);}
+.last-saved{font-size:.64rem;color:var(--success);white-space:nowrap;font-family:var(--font-mono);opacity:0;transition:opacity .4s;}
+.last-saved.show{opacity:1;}
+
+/* ── EDITOR AREA ── */
+.editor-area{flex:1;padding:20px 24px;overflow-y:auto;font-family:var(--font-mono);font-size:.9rem;line-height:1.85;color:var(--text);outline:none;caret-color:var(--accent);}
+.editor-area[contenteditable="false"]{color:var(--sub);cursor:default;}
+.editor-area:empty::before{content:attr(data-placeholder);color:var(--sub);pointer-events:none;}
+.editor-area b,.editor-area strong{color:var(--text);font-weight:700;}
+.editor-area i,.editor-area em{color:var(--accent3);}
+.editor-area mark{background:rgba(255,209,102,.2);color:var(--gold);padding:1px 3px;border-radius:2px;}
+.editor-area ul{padding-left:20px;}
+.editor-area ul li{margin-bottom:4px;}
+
+/* Media in editor */
+.editor-area img{max-width:100%;border-radius:8px;margin:8px 0;border:1px solid var(--border);display:block;}
+.editor-area video{max-width:100%;border-radius:8px;margin:8px 0;border:1px solid var(--border);display:block;}
+
+/* ── MEDIA UPLOAD ZONE (drag & drop) ── */
+.media-drop-zone{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .25s;margin:8px 24px;flex-shrink:0;animation:fadeIn .3s ease;}
+.media-drop-zone:hover,.media-drop-zone.drag-over{animation:uploadPulse 1.5s ease infinite;background:rgba(108,99,255,.06);}
+.media-drop-zone-icon{font-size:2rem;margin-bottom:8px;}
+.media-drop-zone-text{font-size:.8rem;color:var(--sub);font-weight:600;}
+.media-drop-zone-sub{font-size:.7rem;color:var(--muted);margin-top:3px;}
+
+/* ── MEDIA PREVIEW STRIP ── */
+.media-strip{display:flex;gap:8px;padding:8px 24px;flex-shrink:0;overflow-x:auto;border-top:1px solid var(--border);background:var(--card);}
+.media-strip:empty{display:none;}
+.media-thumb{position:relative;flex-shrink:0;}
+.media-thumb img,.media-thumb video{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
+.media-thumb:hover .media-thumb-del{opacity:1;}
+.media-thumb-del{position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--danger);border:none;border-radius:50%;cursor:pointer;font-size:.6rem;color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.media-thumb-type{position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.6);color:#fff;font-size:.5rem;font-weight:700;padding:1px 4px;border-radius:3px;letter-spacing:.5px;}
+.media-insert-btn{position:absolute;bottom:3px;right:3px;background:var(--accent);border:none;border-radius:3px;color:#fff;font-size:.55rem;padding:2px 5px;cursor:pointer;opacity:0;transition:opacity .2s;white-space:nowrap;}
+.media-thumb:hover .media-insert-btn{opacity:1;}
+
+.statusbar{padding:4px 13px;background:var(--bg2);border-top:1px solid var(--border);font-size:.67rem;color:var(--sub);font-family:var(--font-mono);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;}
+.statusbar .ok{color:var(--success);}.statusbar .err{color:var(--danger);}.statusbar .info{color:var(--accent);}
+
+.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--sub);animation:fadeIn .4s ease;padding:20px;}
+.welcome .big{font-size:2.8rem;}
+.welcome h2{font-family:var(--font-display);font-size:1.4rem;color:var(--text);text-align:center;}
+.welcome p{font-size:.81rem;max-width:320px;text-align:center;line-height:1.6;}
+.welcome-path{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:.78rem;color:var(--sub);}
+.welcome-path-step{color:var(--text);font-weight:600;}
+.welcome-path-arrow{color:var(--accent);}
+.shortcuts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px;}
+.shortcut-item{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.71rem;display:flex;gap:5px;align-items:center;}
+.kbd{background:var(--muted);color:var(--sub);border-radius:4px;padding:1px 5px;font-size:.61rem;font-family:var(--font-mono);}
+.storage-bar{display:flex;align-items:center;gap:7px;padding:4px 11px;background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;}
+.storage-label{font-size:.62rem;color:var(--sub);}
+.storage-track{flex:1;max-width:90px;height:3px;background:var(--muted);border-radius:3px;overflow:hidden;}
+.storage-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s ease;}
+.storage-size{font-size:.62rem;color:var(--sub);font-family:var(--font-mono);}
+
+.toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:9999;}
+.toast{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:.79rem;font-weight:500;color:var(--text);box-shadow:0 8px 32px var(--shadow);animation:toastIn .35s cubic-bezier(.16,1,.3,1) both;min-width:200px;}
+.toast.exit{animation:toastOut .3s ease forwards;}
+.toast.success{border-color:var(--success);}.toast.error{border-color:var(--danger);}.toast.warn{border-color:var(--gold);}
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:9998;animation:fadeIn .2s ease;}
+.dialog-box{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:26px 28px;max-width:350px;width:90%;text-align:center;animation:popIn .3s cubic-bezier(.34,1.56,.64,1);}
+.dialog-icon{font-size:2rem;margin-bottom:11px;}
+.dialog-msg{font-size:.86rem;line-height:1.65;color:var(--text);margin-bottom:18px;white-space:pre-wrap;}
+.dialog-btns{display:flex;gap:10px;justify-content:center;}
+.splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;}
+.splash.hide{opacity:0;pointer-events:none;}
+.splash-logo{width:76px;height:76px;margin-bottom:16px;animation:popIn .6s cubic-bezier(.34,1.56,.64,1) .2s both;}
+.splash-title{font-family:var(--font-display);font-size:2.6rem;color:var(--text);animation:fadeUp .5s ease .4s both;letter-spacing:-1px;}
+.splash-sub{color:var(--sub);font-size:.92rem;margin-top:7px;animation:fadeUp .5s ease .55s both;}
+.splash-bar-wrap{width:230px;height:3px;background:var(--card);border-radius:3px;margin-top:32px;overflow:hidden;animation:fadeIn .4s ease .7s both;}
+.splash-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:3px;width:0%;transition:width .05s linear;}
+</style>
+</head>
+<body><div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const STORAGE_KEY="notvault_v5";
+const COLORS=["#6C63FF","#FF6584","#43E8D8","#FFD166","#06D6A0","#F472B6","#60A5FA","#A78BFA"];
+const ICONS=["⚗️","📐","📖","🌍","💻","🎨","🧬","📊","🔬","📝","🏛️","⚙️"];
+const CH_ICONS=["📑","📋","📌","🗂️","📎","🔖","📒","📓","📔","📕","📗","📘"];
+
+function loadData(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)return JSON.parse(r);}catch{}return{subjects:{},activity:{}};}
+function saveData(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch{}}
+function getStorageSize(){try{const raw=localStorage.getItem(STORAGE_KEY)||"";const kb=(new Blob([raw]).size/1024).toFixed(1);return{kb,pct:Math.min((kb/5120)*100,100)};}catch{return{kb:"0",pct:0};}}
+function today(){return new Date().toISOString().slice(0,10);}
+
+// ── PDF Download ──────────────────────────────────────────────────────────────
+function downloadAsPDF(title, content, tags, subject, chapter) {
+  const plain = content.replace(/<img[^>]*>/g,'[Image]').replace(/<video[^>]*>.*?<\/video>/gs,'[Video]').replace(/<[^>]*>/g,'');
+  const date = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+<style>
+  body{font-family:'Georgia',serif;max-width:700px;margin:40px auto;color:#1a1a2e;line-height:1.8;padding:20px;}
+  .header{border-bottom:3px solid #6C63FF;padding-bottom:18px;margin-bottom:28px;}
+  .logo{font-size:1.1rem;font-weight:900;color:#6C63FF;letter-spacing:-0.5px;margin-bottom:6px;}
+  h1{font-size:2rem;font-weight:900;color:#1a1a2e;margin:0 0 8px;}
+  .meta{font-size:.8rem;color:#666;display:flex;gap:16px;flex-wrap:wrap;}
+  .meta span{display:flex;align-items:center;gap:4px;}
+  .path{background:#f0efff;border:1px solid #d4d0ff;border-radius:8px;padding:8px 14px;font-size:.82rem;color:#5B52E8;margin-bottom:20px;}
+  .content{font-size:1rem;line-height:1.9;color:#222;}
+  .content b,.content strong{color:#1a1a2e;}
+  .content i,.content em{color:#5B52E8;}
+  .footer{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:.75rem;color:#999;text-align:center;}
+</style></head><body>
+<div class="header">
+  <div class="logo">📚 NoteVault</div>
+  <h1>${title}</h1>
+  <div class="meta">
+    <span>📅 ${date}</span>
+    ${tags?`<span>🏷 ${tags}</span>`:''}
+  </div>
+</div>
+${subject&&chapter?`<div class="path">📚 ${subject} › 📑 ${chapter} › 📝 ${title}</div>`:''}
+<div class="content">${content||'<p><em>No content</em></p>'}</div>
+<div class="footer">Generated by NoteVault • ${date}</div>
+</body></html>`;
+  const w = window.open('','_blank');
+  w.document.write(htmlContent);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{ w.print(); },600);
+}
+
+// ── Word (.doc) Download ──────────────────────────────────────────────────────
+function downloadAsWord(title, content, tags, subject, chapter) {
+  const date = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  // Strip base64 images from content for Word (replace with placeholder text)
+  const wordContent = content
+    .replace(/<img[^>]*src="data:[^"]*"[^>]*>/g,'<p><em>[Image — view in NoteVault]</em></p>')
+    .replace(/<video[^>]*>.*?<\/video>/gs,'<p><em>[Video — view in NoteVault]</em></p>');
+
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+    xmlns:w='urn:schemas-microsoft-com:office:word'
+    xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset="UTF-8">
+<style>
+  body{font-family:Calibri,sans-serif;font-size:12pt;color:#1a1a2e;margin:2cm;}
+  h1{font-size:24pt;color:#1a1a2e;border-bottom:3pt solid #6C63FF;padding-bottom:6pt;}
+  .logo{font-size:11pt;font-weight:bold;color:#6C63FF;margin-bottom:4pt;}
+  .meta{font-size:9pt;color:#666;margin-bottom:12pt;}
+  .path{background:#f0efff;border:1pt solid #d4d0ff;padding:6pt 10pt;font-size:9pt;color:#5B52E8;margin-bottom:16pt;}
+  .content{font-size:12pt;line-height:1.8;}
+  .footer{margin-top:30pt;border-top:1pt solid #ccc;padding-top:8pt;font-size:8pt;color:#999;text-align:center;}
+</style></head><body>
+<div class="logo">📚 NoteVault — College Notes</div>
+<h1>${title}</h1>
+<div class="meta">📅 ${date}${tags?` &nbsp;|&nbsp; 🏷 ${tags}`:''}</div>
+${subject&&chapter?`<div class="path">📚 ${subject} &rsaquo; 📑 ${chapter} &rsaquo; 📝 ${title}</div>`:''}
+<div class="content">${wordContent||'<p><em>No content</em></p>'}</div>
+<div class="footer">Generated by NoteVault &bull; ${date}</div>
+</body></html>`;
+
+  const blob = new Blob(['\ufeff'+html,],{type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;
+  a.download=`${title.replace(/[^a-z0-9]/gi,'_')}.doc`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importFromFile(onSuccess,onError){const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const p=JSON.parse(ev.target.result);if(p&&p.subjects)onSuccess(p);else onError();}catch{onError();}};r.readAsText(f);};inp.click();}
+
+function exportAllNotes(data){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`notvault-backup-${today()}.json`;a.click();URL.revokeObjectURL(url);}
+
+function useToast(){const[toasts,setToasts]=useState([]);const toast=useCallback((msg,kind="success")=>{const id=Date.now();setToasts(p=>[...p,{id,msg,kind}]);setTimeout(()=>setToasts(p=>p.map(t=>t.id===id?{...t,exit:true}:t)),2700);setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3100);},[]);return{toasts,toast};}
+function ToastContainer({toasts}){return <div className="toast-container">{toasts.map(t=>(<div key={t.id} className={`toast ${t.kind} ${t.exit?"exit":""}`}>{t.kind==="success"?"✅":t.kind==="error"?"❌":"⚠️"} {t.msg}</div>))}</div>;}
+function useConfirm(){const[state,setState]=useState(null);const confirm=useCallback((msg)=>new Promise(r=>setState({msg,r})),[]);const Dialog=state?(<div className="dialog-overlay"><div className="dialog-box pop-in"><div className="dialog-icon">⚠️</div><div className="dialog-msg">{state.msg}</div><div className="dialog-btns"><button className="btn-delete" onClick={()=>{state.r(false);setState(null);}}>Cancel</button><button className="btn-save" onClick={()=>{state.r(true);setState(null);}}>Confirm</button></div></div></div>):null;return{confirm,Dialog};}
+function Clock(){const[t,setT]=useState("");useEffect(()=>{const tick=()=>setT(new Date().toLocaleString("en-IN",{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",second:"2-digit"}));tick();const id=setInterval(tick,1000);return()=>clearInterval(id);},[]);return <span className="clock">{t}</span>;}
+
+function Logo({size=34}){return(<svg className="logo-icon" width={size} height={size} viewBox="0 0 40 40" fill="none"><rect x="5" y="8" width="22" height="26" rx="3" fill="var(--accent)" opacity=".85"/><rect x="8" y="8" width="22" height="26" rx="3" fill="var(--accent)" opacity=".6"/><rect x="11" y="8" width="22" height="26" rx="3" fill="var(--accent)"/><rect x="11" y="8" width="4" height="26" rx="1" fill="rgba(0,0,0,0.22)"/><rect x="18" y="15" width="10" height="2" rx="1" fill="rgba(255,255,255,0.85)"/><rect x="18" y="20" width="13" height="2" rx="1" fill="rgba(255,255,255,0.65)"/><rect x="18" y="25" width="8" height="2" rx="1" fill="rgba(255,255,255,0.5)"/><circle cx="32" cy="10" r="5" fill="var(--accent3)" opacity=".95"/><text x="29.5" y="13.5" fontSize="7" fill="#fff" fontWeight="bold">✦</text></svg>);}
+
+function Splash({onDone}){const[p,setP]=useState(0);const[hide,setHide]=useState(false);useEffect(()=>{let v=0;const id=setInterval(()=>{v+=2;setP(Math.min(v,100));if(v>=100){clearInterval(id);setTimeout(()=>{setHide(true);setTimeout(onDone,500)},280);}},28);return()=>clearInterval(id);},[]);return(<div className={`splash ${hide?"hide":""}`}><Logo size={76}/><h1 className="splash-title">NoteVault</h1><p className="splash-sub">Your smart college study companion</p><div className="splash-bar-wrap"><div className="splash-bar" style={{width:`${p}%`}}/></div></div>);}
+
+function MiniBarChart({data,color}){const max=Math.max(...data,1);const W=160,H=36,bars=data.length,bw=Math.floor(W/bars)-2;return(<svg width={W} height={H} style={{overflow:"visible"}}>{data.map((v,i)=>{const h=Math.max(2,Math.round((v/max)*H));return <rect key={i} x={i*(bw+2)} y={H-h} width={bw} height={h} rx="2" fill={color} opacity={.35+.65*(v/max)}/>;})}</svg>);}
+function RingChart({segments,size=90}){const r=34,cx=45,cy=45,circumference=2*Math.PI*r;let offset=0;const total=segments.reduce((a,s)=>a+s.value,0)||1;return(<svg width={size} height={size} viewBox="0 0 90 90"><circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--muted)" strokeWidth="10"/>{segments.map((s,i)=>{const dash=(s.value/total)*circumference;const gap=circumference-dash;const el=(<circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth="10" strokeDasharray={`${dash} ${gap}`} strokeDashoffset={-offset*circumference/total} strokeLinecap="butt" style={{transition:"stroke-dashoffset .8s,stroke-dasharray .8s"}}/>);offset+=s.value;return el;})}<text x={cx} y={cy+2} textAnchor="middle" dominantBaseline="middle" fontSize="14" fontWeight="900" fill="var(--text)" fontFamily="var(--font-display)">{total}</text><text x={cx} y={cy+16} textAnchor="middle" fontSize="6" fill="var(--sub)" fontFamily="var(--font-body)">NOTES</text></svg>);}
+
+// ══ DOWNLOAD BUTTON COMPONENT ══════════════════════════════════════════════════
+function DownloadButton({disabled, onDownloadPDF, onDownloadWord}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(null);
+  const ref = useRef(null);
+
+  useEffect(()=>{
+    function handler(e){ if(ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown",handler);
+    return()=>document.removeEventListener("mousedown",handler);
+  },[]);
+
+  async function handle(type) {
+    setLoading(type);
+    await new Promise(r=>setTimeout(r,300));
+    if(type==="pdf") onDownloadPDF();
+    else onDownloadWord();
+    setLoading(null);
+    setOpen(false);
+  }
+
+  return (
+    <div className="download-wrap" ref={ref}>
+      <button className={`btn-download ${open?"open":""}`} onClick={()=>!disabled&&setOpen(o=>!o)} disabled={disabled}>
+        ⬇ Download
+        <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="download-dropdown">
+          <div className="download-dropdown-title">Choose Format</div>
+          {loading ? (
+            <div className="dl-loading"><div className="dl-spinner"/> Preparing {loading.toUpperCase()}…</div>
+          ) : (
+            <>
+              <div className="dl-option" onClick={()=>handle("pdf")}>
+                <div className="dl-option-icon pdf">📄</div>
+                <div className="dl-option-info">
+                  <div className="dl-option-label">Download as PDF</div>
+                  <div className="dl-option-sub">Opens print dialog → Save as PDF</div>
+                </div>
+              </div>
+              <div className="dl-option" onClick={()=>handle("word")}>
+                <div className="dl-option-icon word">📝</div>
+                <div className="dl-option-info">
+                  <div className="dl-option-label">Download as Word</div>
+                  <div className="dl-option-sub">Saves as .doc file</div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══ MEDIA UPLOAD COMPONENT ════════════════════════════════════════════════════
+function MediaPanel({disabled, mediaFiles, onAdd, onRemove, onInsert}) {
+  const [drag, setDrag] = useState(false);
+  const fileRef = useRef(null);
+
+  function handleFiles(files) {
+    const allowed = [...files].filter(f=>f.type.startsWith("image/")||f.type.startsWith("video/"));
+    if(!allowed.length){return;}
+    allowed.forEach(f=>{
+      const reader = new FileReader();
+      reader.onload = e => onAdd({id:Date.now()+Math.random(),name:f.name,type:f.type.startsWith("image/")?"image":"video",src:e.target.result,size:f.size});
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function onDrop(e){e.preventDefault();setDrag(false);if(!disabled)handleFiles(e.dataTransfer.files);}
+  function onDragOver(e){e.preventDefault();if(!disabled)setDrag(true);}
+  function onDragLeave(){setDrag(false);}
+
+  if(disabled) return null;
+
+  return (
+    <div>
+      {/* Drop zone */}
+      <div
+        className={`media-drop-zone ${drag?"drag-over":""}`}
+        onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave}
+        onClick={()=>fileRef.current?.click()}>
+        <div className="media-drop-zone-icon">🖼️</div>
+        <div className="media-drop-zone-text">Drop Image or Video here</div>
+        <div className="media-drop-zone-sub">or click to browse · JPG, PNG, GIF, MP4, WebM</div>
+        <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{display:"none"}}
+          onChange={e=>handleFiles(e.target.files)}/>
+      </div>
+
+      {/* Media strip */}
+      {mediaFiles.length>0 && (
+        <div className="media-strip">
+          {mediaFiles.map(m=>(
+            <div key={m.id} className="media-thumb" title={m.name}>
+              {m.type==="image"
+                ? <img src={m.src} alt={m.name} onClick={()=>onInsert(m)}/>
+                : <video src={m.src} onClick={()=>onInsert(m)}/>
+              }
+              <span className="media-thumb-type">{m.type==="image"?"IMG":"VID"}</span>
+              <button className="media-thumb-del" onClick={()=>onRemove(m.id)}>✕</button>
+              <button className="media-insert-btn" onClick={()=>onInsert(m)}>Insert ↑</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══ DASHBOARD ═════════════════════════════════════════════════════════════════
+function Dashboard({data, onNavigateToNote, onQuickNote}) {
+  const greetHour=new Date().getHours();
+  const greet=greetHour<12?"Good Morning":greetHour<17?"Good Afternoon":"Good Evening";
+  const subjects=Object.keys(data.subjects);
+  const totalSubjects=subjects.length;
+  let totalChapters=0,totalNotes=0,allNotes=[],allTags=[];
+  subjects.forEach(subj=>{const chs=data.subjects[subj].chapters||{};Object.keys(chs).forEach(ch=>{totalChapters++;const nts=chs[ch].notes||{};Object.entries(nts).forEach(([nid,note])=>{totalNotes++;allNotes.push({...note,nid,subj,ch});(note.tags||"").split(",").filter(Boolean).forEach(t=>allTags.push(t.trim()));});});});
+  const recentNotes=[...allNotes].sort((a,b)=>(b.modified||"")>(a.modified||"")?1:-1).slice(0,7);
+  const tagFreq={};allTags.forEach(t=>{tagFreq[t]=(tagFreq[t]||0)+1;});
+  const topTags=Object.entries(tagFreq).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const ringSegs=subjects.slice(0,6).map((subj,i)=>{const count=Object.values(data.subjects[subj].chapters||{}).reduce((a,ch)=>a+Object.keys(ch.notes||{}).length,0);return{label:subj,value:count,color:COLORS[i%COLORS.length]};}).filter(s=>s.value>0);
+  const subjNoteCounts=subjects.map((subj,i)=>{const count=Object.values(data.subjects[subj].chapters||{}).reduce((a,ch)=>a+Object.keys(ch.notes||{}).length,0);return{name:subj,count,color:COLORS[i%COLORS.length],icon:ICONS[i%ICONS.length],chapters:Object.keys(data.subjects[subj].chapters||{}).length};}).sort((a,b)=>b.count-a.count).slice(0,6);
+  const maxCount=Math.max(...subjNoteCounts.map(s=>s.count),1);
+  const activity=data.activity||{};
+  const heatCells=Array.from({length:35},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(34-i));const key=d.toISOString().slice(0,10);const v=activity[key]||0;const level=v===0?"":`l${Math.min(4,Math.ceil(v/2))}`;return{key,v,level};});
+  const weekData=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return activity[d.toISOString().slice(0,10)]||0;});
+  const totalWords=allNotes.reduce((a,n)=>{const txt=(n.content||"").replace(/<[^>]*>/g,"").trim();return a+(txt?txt.split(/\s+/).length:0);},0);
+
+  return (
+    <div className="dashboard">
+      <div className="dash-greeting"><h1><span className="greeting-day">{greet}!</span> Ready to Study?</h1><p>NoteVault Dashboard — {new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p></div>
+      <div className="dash-stats">
+        {[{icon:"📚",value:totalSubjects,label:"Subjects",color:COLORS[0],trend:"total",tc:"trend-new"},{icon:"📑",value:totalChapters,label:"Chapters",color:COLORS[1],trend:"total",tc:"trend-new"},{icon:"📝",value:totalNotes,label:"Notes",color:COLORS[2],trend:"active",tc:"trend-up"},{icon:"✍️",value:totalWords.toLocaleString(),label:"Words Written",color:COLORS[3],trend:"total",tc:"trend-up"}].map((s,i)=>(
+          <div key={i} className="stat-card" style={{"--c":s.color,animationDelay:`${i*80}ms`}}>
+            <span className="stat-card-icon">{s.icon}</span>
+            <div className="stat-card-value">{s.value}</div>
+            <div className="stat-card-label">{s.label}</div>
+            <span className={`stat-card-trend ${s.tc}`}>{s.trend}</span>
+          </div>
+        ))}
+      </div>
+      <div className="dash-grid">
+        <div className="dash-card" style={{animationDelay:"120ms"}}>
+          <div className="dash-card-header"><span className="dash-card-title">🕐 Recent Notes</span><span className="dash-card-badge">{recentNotes.length} shown</span></div>
+          <div className="dash-card-body" style={{padding:"8px 16px"}}>
+            {recentNotes.length===0?<div className="dash-empty"><div className="dash-empty-icon">📭</div>No notes yet!</div>
+            :recentNotes.map((note,i)=>(<div key={note.nid} className="recent-note-item" style={{animationDelay:`${i*40}ms`}} onClick={()=>onNavigateToNote(note.subj,note.ch,note.nid,note)}><div className="rni-dot" style={{background:COLORS[subjects.indexOf(note.subj)%COLORS.length]}}/><div className="rni-info"><div className="rni-title">{note.title||"Untitled"}</div><div className="rni-path">{note.subj} › {note.ch}</div></div><span className="rni-date">{(note.modified||"").split(" ").slice(0,2).join(" ")}</span></div>))}
+          </div>
+        </div>
+        <div className="dash-card" style={{animationDelay:"160ms"}}>
+          <div className="dash-card-header"><span className="dash-card-title">🍩 Notes by Subject</span><span className="dash-card-badge">{totalNotes} total</span></div>
+          <div className="dash-card-body">{ringSegs.length===0?<div className="dash-empty"><div className="dash-empty-icon">📊</div>Add notes to see</div>:<div className="ring-wrap"><RingChart segments={ringSegs} size={110}/><div className="ring-legend">{ringSegs.map((s,i)=>(<div key={i} className="ring-legend-item"><div className="ring-legend-dot" style={{background:s.color}}/><span className="ring-legend-label" style={{maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.label}</span><span className="ring-legend-val">{s.value}</span></div>))}</div></div>}</div>
+        </div>
+      </div>
+      <div className="dash-grid-3">
+        <div className="dash-card" style={{animationDelay:"200ms"}}>
+          <div className="dash-card-header"><span className="dash-card-title">📊 Subject Progress</span><span className="dash-card-badge">by notes</span></div>
+          <div className="dash-card-body">{subjNoteCounts.length===0?<div className="dash-empty"><div className="dash-empty-icon">📚</div>No subjects yet</div>:subjNoteCounts.map((s,i)=>(<div key={s.name} className="subj-bar-item" style={{animationDelay:`${i*50}ms`}}><div className="subj-bar-top"><span className="subj-bar-name"><span>{s.icon}</span>{s.name}</span><span className="subj-bar-count">{s.count}n·{s.chapters}ch</span></div><div className="bar-track"><div className="bar-fill" style={{width:`${(s.count/maxCount)*100}%`,background:s.color}}/></div></div>))}</div>
+        </div>
+        <div className="dash-card" style={{animationDelay:"240ms"}}>
+          <div className="dash-card-header"><span className="dash-card-title">🔥 Activity (35d)</span><span className="dash-card-badge">saves/day</span></div>
+          <div className="dash-card-body"><div className="heatmap-grid">{heatCells.map(c=>(<div key={c.key} className={`heatmap-cell ${c.level}`} title={`${c.key}: ${c.v} saves`}/>))}</div><div className="heatmap-labels"><span>35d ago</span><span>Today</span></div><div style={{marginTop:14}}><div style={{fontSize:".7rem",color:"var(--sub)",marginBottom:7,fontWeight:600}}>This Week</div><MiniBarChart data={weekData} color="var(--accent)"/></div></div>
+        </div>
+        <div className="dash-card" style={{animationDelay:"280ms"}}>
+          <div className="dash-card-header"><span className="dash-card-title">⚡ Quick Actions</span></div>
+          <div className="dash-card-body">
+            <div className="quick-actions">
+              {[{icon:"📝",text:"New Note",sub:"Start writing",fn:onQuickNote},{icon:"📤",text:"Export All",sub:"Backup JSON",fn:()=>exportAllNotes(data)},{icon:"🖼️",text:"Add Media",sub:"Images & Videos",fn:onQuickNote},{icon:"🔍",text:"Search",sub:"Find anything",fn:()=>{}}].map((a,i)=>(<button key={i} className="qa-btn" onClick={a.fn}><span className="qa-btn-icon">{a.icon}</span><div><div className="qa-btn-text">{a.text}</div><div className="qa-btn-sub">{a.sub}</div></div></button>))}
+            </div>
+            <div style={{marginTop:16}}>
+              {[{icon:"🔥",label:"Study Streak",sub:"Active days",val:`${Object.keys(activity).length}d`},{icon:"⭐",label:"Top Subject",sub:subjNoteCounts[0]?.name||"None",val:`${subjNoteCounts[0]?.count||0}`},{icon:"📌",label:"Unique Tags",sub:"Across all notes",val:Object.keys(tagFreq).length}].map((s,i)=>(<div key={i} className="streak-row"><span className="streak-icon">{s.icon}</span><div className="streak-info"><div className="streak-label">{s.label}</div><div className="streak-sub">{s.sub}</div></div><span className="streak-val">{s.val}</span></div>))}
+            </div>
+          </div>
+        </div>
+      </div>
+      {topTags.length>0&&(<div className="dash-card" style={{animationDelay:"320ms"}}><div className="dash-card-header"><span className="dash-card-title">🏷 Tags Cloud</span><span className="dash-card-badge">{Object.keys(tagFreq).length} unique</span></div><div className="dash-card-body"><div className="tags-cloud">{topTags.map(([tag,count],i)=>{const c=COLORS[i%COLORS.length];return(<span key={tag} className="tag-bubble" style={{background:`${c}22`,color:c,borderColor:`${c}44`}}>#{tag} <span style={{opacity:.6,fontSize:".65rem"}}>×{count}</span></span>);})}</div></div></div>)}
+    </div>
+  );
+}
+
+// ══ MAIN APP ══════════════════════════════════════════════════════════════════
+function App() {
+  const [splashDone,setSplashDone]=useState(false);
+  const [data,setData]=useState(loadData);
+  const [theme,setTheme]=useState(()=>localStorage.getItem("notvault_theme")||"dark");
+  const [view,setView]=useState("dashboard");
+  const [currentSubj,setCurrentSubj]=useState(null);
+  const [currentChapter,setCurrentChapter]=useState(null);
+  const [currentNid,setCurrentNid]=useState(null);
+  const [search,setSearch]=useState("");
+  const [subjInput,setSubjInput]=useState("");
+  const [chapterInput,setChapterInput]=useState("");
+  const [noteTitle,setNoteTitle]=useState("");
+  const [noteTags,setNoteTags]=useState("");
+  const [status,setStatus]=useState("Ready");
+  const [statusKind,setStatusKind]=useState("");
+  const [autoSaveStatus,setAutoSaveStatus]=useState("idle");
+  const [lastSaved,setLastSaved]=useState("");
+  const [showLastSaved,setShowLastSaved]=useState(false);
+  const [storageInfo,setStorageInfo]=useState({kb:"0",pct:0});
+  const [saveBtnPulse,setSaveBtnPulse]=useState(false);
+  const [mediaFiles,setMediaFiles]=useState([]); // [{id,name,type,src,size}]
+
+  const editorRef=useRef(null);
+  const autoSaveRef=useRef(null);
+  const {toasts,toast}=useToast();
+  const {confirm,Dialog}=useConfirm();
+
+  useEffect(()=>{document.documentElement.setAttribute("data-theme",theme);localStorage.setItem("notvault_theme",theme);},[theme]);
+  const toggleTheme=()=>setTheme(t=>t==="dark"?"light":"dark");
+  const totalSubjs=Object.keys(data.subjects).length;
+  const totalNotes=Object.values(data.subjects).reduce((a,subj)=>a+Object.values(subj.chapters||{}).reduce((b,ch)=>b+Object.keys(ch.notes||{}).length,0),0);
+  useEffect(()=>{saveData(data);setStorageInfo(getStorageSize());},[data]);
+  function recordActivity(){const key=today();setData(prev=>({...prev,activity:{...(prev.activity||{}),[key]:((prev.activity||{})[key]||0)+1}}));}
+
+  useEffect(()=>{if(!currentNid||!currentSubj||!currentChapter)return;setAutoSaveStatus("saving");clearTimeout(autoSaveRef.current);autoSaveRef.current=setTimeout(()=>doSave(true),2000);return()=>clearTimeout(autoSaveRef.current);},[noteTitle,noteTags]);
+  useEffect(()=>{const h=e=>{if((e.ctrlKey||e.metaKey)&&e.key==="s"){e.preventDefault();doSave(false);}if((e.ctrlKey||e.metaKey)&&e.key==="n"){e.preventDefault();handleAddNote();}if((e.ctrlKey||e.metaKey)&&e.key==="b"){e.preventDefault();execFormat("bold");}if((e.ctrlKey||e.metaKey)&&e.key==="i"){e.preventDefault();execFormat("italic");}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);});
+  function handleEditorInput(){setAutoSaveStatus("saving");clearTimeout(autoSaveRef.current);autoSaveRef.current=setTimeout(()=>doSave(true),2000);}
+
+  function doSave(silent=false){
+    if(!currentSubj||!currentChapter||!currentNid)return;
+    const content=editorRef.current?editorRef.current.innerHTML:"";
+    const now=new Date().toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    const updated={...data.subjects[currentSubj].chapters[currentChapter].notes[currentNid],title:noteTitle||"Untitled",content,tags:noteTags,modified:now};
+    setData(prev=>({...prev,subjects:{...prev.subjects,[currentSubj]:{...prev.subjects[currentSubj],chapters:{...prev.subjects[currentSubj].chapters,[currentChapter]:{...prev.subjects[currentSubj].chapters[currentChapter],notes:{...prev.subjects[currentSubj].chapters[currentChapter].notes,[currentNid]:updated}}}}}}));
+    recordActivity();
+    setAutoSaveStatus("saved");setLastSaved(`Saved ${now}`);setShowLastSaved(true);setTimeout(()=>setShowLastSaved(false),3000);setTimeout(()=>setAutoSaveStatus("idle"),3000);
+    setStatus(`✅ Saved "${updated.title}" at ${now}`);setStatusKind("ok");
+    if(!silent){toast(`Saved — ${updated.title}`);setSaveBtnPulse(true);setTimeout(()=>setSaveBtnPulse(false),600);}
+  }
+
+  function handleAddSubj(e){if(e&&e.key&&e.key!=="Enter")return;const name=subjInput.trim();if(!name)return;if(data.subjects[name]){toast(`"${name}" already exists`,"error");return;}setData(prev=>({...prev,subjects:{...prev.subjects,[name]:{chapters:{}}}}));setSubjInput("");setCurrentSubj(name);setCurrentChapter(null);setCurrentNid(null);clearEditor();setView("notes");toast(`Subject "${name}" created! 🎓`);}
+  async function handleDelSubj(name){const chCount=Object.keys(data.subjects[name]?.chapters||{}).length;const ok=await confirm(`Delete subject "${name}"${chCount?` and all ${chCount} chapter(s)`:""}\nThis cannot be undone.`);if(!ok)return;setData(prev=>{const n={...prev,subjects:{...prev.subjects}};delete n.subjects[name];return n;});if(currentSubj===name){setCurrentSubj(null);setCurrentChapter(null);setCurrentNid(null);clearEditor();}toast(`Deleted "${name}"`,"error");}
+  function handleAddChapter(e){if(e&&e.key&&e.key!=="Enter")return;if(!currentSubj){toast("Select a subject first","warn");return;}const name=chapterInput.trim();if(!name)return;if(data.subjects[currentSubj].chapters[name]){toast(`Chapter "${name}" exists`,"error");return;}setData(prev=>({...prev,subjects:{...prev.subjects,[currentSubj]:{...prev.subjects[currentSubj],chapters:{...prev.subjects[currentSubj].chapters,[name]:{notes:{}}}}}}));setChapterInput("");setCurrentChapter(name);setCurrentNid(null);clearEditor();toast(`Chapter "${name}" created! 📑`);}
+  async function handleDelChapter(name){const noteCount=Object.keys(data.subjects[currentSubj]?.chapters[name]?.notes||{}).length;const ok=await confirm(`Delete chapter "${name}"${noteCount?` and all ${noteCount} note(s)`:""}\nThis cannot be undone.`);if(!ok)return;setData(prev=>{const n={...prev,subjects:{...prev.subjects,[currentSubj]:{...prev.subjects[currentSubj],chapters:{...prev.subjects[currentSubj].chapters}}}};delete n.subjects[currentSubj].chapters[name];return n;});if(currentChapter===name){setCurrentChapter(null);setCurrentNid(null);clearEditor();}toast(`Deleted chapter "${name}"`,"error");}
+
+  function handleAddNote(){if(!currentSubj){toast("Select a subject first","warn");setView("notes");return;}if(!currentChapter){toast("Select a chapter first","warn");setView("notes");return;}const nid=String(Date.now());const now=new Date().toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});const note={title:"New Note",content:"",tags:"",created:now,modified:now};setData(prev=>({...prev,subjects:{...prev.subjects,[currentSubj]:{...prev.subjects[currentSubj],chapters:{...prev.subjects[currentSubj].chapters,[currentChapter]:{...prev.subjects[currentSubj].chapters[currentChapter],notes:{...prev.subjects[currentSubj].chapters[currentChapter].notes,[nid]:note}}}}}}));loadNote(nid,note);}
+  function loadNote(nid,note){setCurrentNid(nid);setNoteTitle(note.title);setNoteTags(note.tags||"");setMediaFiles([]);if(editorRef.current){editorRef.current.innerHTML=note.content||"";editorRef.current.contentEditable="true";}setStatus(`Editing: ${note.title}  ·  Ctrl+S to save`);setStatusKind("info");}
+  function clearEditor(){setNoteTitle("");setNoteTags("");setMediaFiles([]);if(editorRef.current){editorRef.current.innerHTML="";editorRef.current.contentEditable="false";}setStatus("Ready");setStatusKind("");}
+  async function handleDelNote(){if(!currentSubj||!currentChapter||!currentNid)return;const title=data.subjects[currentSubj]?.chapters[currentChapter]?.notes[currentNid]?.title||"Note";const ok=await confirm(`Delete "${title}"?\nThis cannot be undone.`);if(!ok)return;setData(prev=>{const n={...prev,subjects:{...prev.subjects,[currentSubj]:{...prev.subjects[currentSubj],chapters:{...prev.subjects[currentSubj].chapters,[currentChapter]:{...prev.subjects[currentSubj].chapters[currentChapter],notes:{...prev.subjects[currentSubj].chapters[currentChapter].notes}}}}}};delete n.subjects[currentSubj].chapters[currentChapter].notes[currentNid];return n;});setCurrentNid(null);clearEditor();toast(`Deleted "${title}"`,"error");}
+
+  function handleExportAll(){exportAllNotes(data);toast("All notes exported! 📦");}
+  function handleImport(){importFromFile(async parsed=>{const subCount=Object.keys(parsed.subjects).length;const ok=await confirm(`Import ${subCount} subject(s)?\nThis will MERGE with existing notes.`);if(!ok)return;const merged={...data,subjects:{...data.subjects}};for(const[subj,subjData]of Object.entries(parsed.subjects)){if(!merged.subjects[subj])merged.subjects[subj]={chapters:{}};for(const[ch,chData]of Object.entries(subjData.chapters||{})){if(!merged.subjects[subj].chapters[ch])merged.subjects[subj].chapters[ch]={notes:{}};merged.subjects[subj].chapters[ch].notes={...merged.subjects[subj].chapters[ch].notes,...(chData.notes||{})};}}setData(merged);toast(`Imported ${subCount} subject(s)! 🎉`);},()=>toast("Invalid backup file","error"));}
+
+  // ── Download handlers ──────────────────────────────────────────────────────
+  function handleDownloadPDF(){
+    if(!currentSubj||!currentChapter||!currentNid)return;
+    const content=editorRef.current?editorRef.current.innerHTML:"";
+    downloadAsPDF(noteTitle||"Untitled",content,noteTags,currentSubj,currentChapter);
+    toast("PDF ready — use browser print dialog to save! 📄");
+  }
+  function handleDownloadWord(){
+    if(!currentSubj||!currentChapter||!currentNid)return;
+    const content=editorRef.current?editorRef.current.innerHTML:"";
+    downloadAsWord(noteTitle||"Untitled",content,noteTags,currentSubj,currentChapter);
+    toast("Word file downloading! 📝");
+  }
+
+  // ── Media handlers ─────────────────────────────────────────────────────────
+  function handleMediaAdd(file){ setMediaFiles(p=>[...p,file]); toast(`${file.type==="image"?"🖼️ Image":"🎬 Video"} added! Click 'Insert ↑' to embed.`,"success"); }
+  function handleMediaRemove(id){ setMediaFiles(p=>p.filter(f=>f.id!==id)); }
+  function handleMediaInsert(file){
+    if(!editorRef.current||!currentNid)return;
+    editorRef.current.focus();
+    const tag = file.type==="image"
+      ? `<img src="${file.src}" alt="${file.name}" style="max-width:100%;border-radius:8px;margin:8px 0;"/>`
+      : `<video src="${file.src}" controls style="max-width:100%;border-radius:8px;margin:8px 0;"></video>`;
+    document.execCommand("insertHTML",false,tag);
+    handleEditorInput();
+    toast(`${file.type==="image"?"🖼️ Image":"🎬 Video"} inserted into note!`);
+  }
+
+  function execFormat(cmd,val){if(!editorRef.current)return;editorRef.current.focus();document.execCommand(cmd,false,val||null);}
+  function insertBullet(){execFormat("insertUnorderedList");}
+
+  function handleNavigateToNote(subj,ch,nid,note){setCurrentSubj(subj);setCurrentChapter(ch);setView("notes");setTimeout(()=>loadNote(nid,note),50);}
+  function handleQuickNote(){setView("notes");setTimeout(handleAddNote,50);}
+
+  const chapters=currentSubj?(data.subjects[currentSubj]?.chapters||{}):{};
+  const notes=(currentSubj&&currentChapter)?(data.subjects[currentSubj]?.chapters[currentChapter]?.notes||{}):{};
+  const editorText=editorRef.current?(editorRef.current.innerText||""):"";
+  const words=editorText.trim()?editorText.trim().split(/\s+/).length:0;
+  const chars=editorText.length;
+  const filteredNotes=Object.entries(notes).sort((a,b)=>(b[1].modified||"")>(a[1].modified||"")?1:-1).filter(([,n])=>{if(!search)return true;const q=search.toLowerCase();return n.title.toLowerCase().includes(q)||(n.tags||"").toLowerCase().includes(q);});
+
+  if(!splashDone)return <Splash onDone={()=>setSplashDone(true)}/>;
+
+  return (
+    <div className="app">
+      {Dialog}
+      <ToastContainer toasts={toasts}/>
+
+      {/* ══ TOPBAR ══ */}
+      <header className="topbar">
+        <div className="topbar-logo" onClick={()=>setView("dashboard")}>
+          <Logo size={34}/>
+          <div className="logo-text-wrap">
+            <span className="logo-title">NoteVault</span>
+            <span className="logo-sub">College Notes</span>
+          </div>
+          <span className="beta">v5</span>
+        </div>
+        <div className="nav-tabs">
+          <button className={`nav-tab ${view==="dashboard"?"active":""}`} onClick={()=>setView("dashboard")}>🏠 Dashboard</button>
+          <button className={`nav-tab ${view==="notes"?"active":""}`} onClick={()=>setView("notes")}>📝 My Notes</button>
+        </div>
+        <div className="search-wrap">
+          <span style={{color:"var(--sub)"}}>🔍</span>
+          <input placeholder="Search notes…" value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+        <div className="autosave-indicator">
+          <div className={`autosave-dot ${autoSaveStatus}`}/>
+          <span>{autoSaveStatus==="saving"?"Saving…":autoSaveStatus==="saved"?"Auto-saved":"All saved"}</span>
+        </div>
+        <div className="topbar-actions">
+          <button className="btn-topbar export" onClick={handleExportAll}>⬇ Backup</button>
+          <button className="btn-topbar import" onClick={handleImport}>⬆ Import</button>
+        </div>
+        <button className="theme-toggle" onClick={toggleTheme}>
+          {theme==="dark"?"🌙":"☀️"}
+          <div className="toggle-track"><div className="toggle-thumb"/></div>
+          {theme==="dark"?"Dark":"Light"}
+        </button>
+        <div className="topbar-right">
+          <Clock/>
+          <div className="stats-pill">{totalSubjs} subj · {totalNotes} notes</div>
+        </div>
+      </header>
+
+      <div className="body">
+        {/* ══ LEFT NAV ══ */}
+        <div className="nav-sidebar">
+          {[{icon:"🏠",label:"Dashboard",v:"dashboard"},{icon:"📝",label:"My Notes",v:"notes"}].map(n=>(<button key={n.v} className={`nav-icon-btn ${view===n.v?"active":""}`} onClick={()=>setView(n.v)}>{n.icon}<span className="tooltip">{n.label}</span></button>))}
+          <div className="nav-divider"/>
+          <button className="nav-icon-btn" onClick={handleExportAll}>📤<span className="tooltip">Export Backup</span></button>
+          <button className="nav-icon-btn" onClick={handleImport}>📥<span className="tooltip">Import Backup</span></button>
+        </div>
+
+        {view==="dashboard"?(
+          <Dashboard data={data} onNavigateToNote={handleNavigateToNote} onQuickNote={handleQuickNote}/>
+        ):(
+          <div className="notes-app">
+            {/* SUBJECTS */}
+            <aside className="sidebar">
+              <div className="sidebar-header">📚 Subjects</div>
+              <div className="sidebar-section">
+                <input placeholder="New subject…" value={subjInput} onChange={e=>setSubjInput(e.target.value)} onKeyDown={handleAddSubj}/>
+                <button className="btn-icon" onClick={handleAddSubj}>＋</button>
+              </div>
+              <div className="divider"/>
+              <div className="subj-list">
+                {Object.keys(data.subjects).length===0&&<div className="empty-hint">No subjects yet.<br/>Add one above! 👆</div>}
+                {Object.keys(data.subjects).sort().map((subj,i)=>{const color=COLORS[i%COLORS.length],icon=ICONS[i%ICONS.length];const chCount=Object.keys(data.subjects[subj]?.chapters||{}).length;const nCount=Object.values(data.subjects[subj]?.chapters||{}).reduce((a,ch)=>a+Object.keys(ch.notes||{}).length,0);return(<div key={subj} className={`subj-item ${currentSubj===subj?"active":""}`} style={{animationDelay:`${i*40}ms`}} onClick={()=>{setCurrentSubj(subj);setCurrentChapter(null);setCurrentNid(null);clearEditor();}}><div className="subj-dot" style={{background:color}}/><div className="subj-item-inner"><div className="subj-name">{icon} {subj}</div><div className="subj-count">{chCount}ch · {nCount}n</div></div><button className="subj-del" onClick={e=>{e.stopPropagation();handleDelSubj(subj);}}>✕</button></div>);})}
+              </div>
+              <div className="storage-bar">
+                <span className="storage-label">💾</span>
+                <div className="storage-track"><div className="storage-fill" style={{width:`${storageInfo.pct}%`}}/></div>
+                <span className="storage-size">{storageInfo.kb}KB</span>
+              </div>
+            </aside>
+
+            {/* CHAPTERS */}
+            <div className="chapter-panel">
+              <div className="chapter-header">📑 Chapters</div>
+              <div className="chapter-input-row">
+                <input placeholder={currentSubj?"New chapter…":"← Pick subject"} value={chapterInput} onChange={e=>setChapterInput(e.target.value)} onKeyDown={handleAddChapter} disabled={!currentSubj}/>
+                <button className="btn-icon-sm" onClick={handleAddChapter} disabled={!currentSubj}>＋</button>
+              </div>
+              <div className="divider"/>
+              <div className="chapter-list">
+                {!currentSubj&&<div className="empty-hint">← Select a subject</div>}
+                {currentSubj&&Object.keys(chapters).length===0&&<div className="empty-hint">No chapters yet.<br/>Add one above!</div>}
+                {Object.keys(chapters).map((ch,i)=>{const icon=CH_ICONS[i%CH_ICONS.length];const nCount=Object.keys(chapters[ch]?.notes||{}).length;return(<div key={ch} className={`chapter-item ${currentChapter===ch?"active":""}`} style={{animationDelay:`${i*35}ms`}} onClick={()=>{setCurrentChapter(ch);setCurrentNid(null);clearEditor();}}><span className="chapter-icon">{icon}</span><div className="chapter-item-inner"><div className="chapter-name">{ch}</div><div className="chapter-notes-count">{nCount} note{nCount!==1?"s":""}</div></div><button className="chapter-del" onClick={e=>{e.stopPropagation();handleDelChapter(ch);}}>✕</button></div>);})}
+              </div>
+            </div>
+
+            {/* NOTES LIST */}
+            <div className="mid-panel">
+              <div className="mid-header">
+                <span className="mid-title">{currentChapter||"Notes"}</span>
+                <button className="btn-new-note" onClick={handleAddNote} disabled={!currentChapter}>＋ Note</button>
+              </div>
+              <div className="note-count">{filteredNotes.length} note{filteredNotes.length!==1?"s":""}</div>
+              <div className="notes-list">
+                {!currentSubj&&<div className="empty-hint">← Select a subject</div>}
+                {currentSubj&&!currentChapter&&<div className="empty-hint">← Select a chapter</div>}
+                {currentSubj&&currentChapter&&filteredNotes.length===0&&<div className="empty-hint">{search?"No results.":"No notes yet.\nClick '＋ Note'!"}</div>}
+                {filteredNotes.map(([nid,note],idx)=>(<div key={nid} className={`note-card ${currentNid===nid?"active":""}`} style={{animationDelay:`${idx*35}ms`}} onClick={()=>loadNote(nid,note)}><div className="note-card-title">{note.title||"Untitled"}</div>{note.content&&<div className="note-card-snippet" dangerouslySetInnerHTML={{__html:note.content.replace(/<[^>]*>/g,"").substring(0,100)}}/>}<div className="note-card-footer"><div className="note-tags">{(note.tags||"").split(",").filter(Boolean).slice(0,3).map(t=>(<span key={t} className="tag-chip">{t.trim()}</span>))}</div><span className="note-date">{note.modified}</span></div></div>))}
+              </div>
+            </div>
+
+            {/* EDITOR */}
+            <div className="editor-panel">
+              {(currentSubj||currentChapter||currentNid)&&(
+                <div className="breadcrumb">
+                  <span className={`breadcrumb-item ${!currentChapter&&!currentNid?"active":""}`}>{currentSubj||"—"}</span>
+                  {currentSubj&&<><span className="breadcrumb-sep">›</span><span className={`breadcrumb-item ${!currentNid?"active":""}`}>{currentChapter||"—"}</span></>}
+                  {currentChapter&&currentNid&&<><span className="breadcrumb-sep">›</span><span className="breadcrumb-item active">{noteTitle||"New Note"}</span></>}
+                </div>
+              )}
+              <div className="editor-toolbar">
+                <div className="title-input-wrap">
+                  <input className="title-input" placeholder="Note title…" value={noteTitle} onChange={e=>setNoteTitle(e.target.value)} disabled={!currentNid}/>
+                </div>
+                <div className="fmt-group">
+                  <button className="fmt-btn" onClick={()=>execFormat("bold")}><b>B</b></button>
+                  <button className="fmt-btn" onClick={()=>execFormat("italic")}><i>I</i></button>
+                  <button className="fmt-btn" onClick={()=>execFormat("underline")}><u>U</u></button>
+                  <button className="fmt-btn highlight" onClick={()=>execFormat("hiliteColor","#FFD166")}>◈ HL</button>
+                  <button className="fmt-btn bullet" onClick={insertBullet}>• List</button>
+                </div>
+                {/* Media upload button */}
+                <button className="btn-media" disabled={!currentNid}
+                  onClick={()=>{if(currentNid){const inp=document.createElement("input");inp.type="file";inp.accept="image/*,video/*";inp.multiple=true;inp.onchange=e=>handleMediaAdd&&[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=ev=>handleMediaAdd({id:Date.now()+Math.random(),name:f.name,type:f.type.startsWith("image/")?"image":"video",src:ev.target.result,size:f.size});r.readAsDataURL(f);});inp.click();}}}>
+                  🖼️ Media
+                </button>
+                <button className={`btn-save ${saveBtnPulse?"pulse":""}`} onClick={()=>doSave(false)} disabled={!currentNid}>💾 Save</button>
+                {/* DOWNLOAD BUTTON — replaces old Export button */}
+                <DownloadButton
+                  disabled={!currentNid}
+                  onDownloadPDF={handleDownloadPDF}
+                  onDownloadWord={handleDownloadWord}
+                />
+                <button className="btn-delete" onClick={handleDelNote} disabled={!currentNid}>🗑 Delete</button>
+              </div>
+
+              <div className="tag-bar">
+                <span className="tag-bar-label">🏷 Tags:</span>
+                <input className="tag-bar-input" placeholder="chapter1, exam, important" value={noteTags} onChange={e=>setNoteTags(e.target.value)} disabled={!currentNid}/>
+                {currentNid&&<>
+                  <span className="wcount">{words}w · {chars}c</span>
+                  <span className={`last-saved ${showLastSaved?"show":""}`}>✓ {lastSaved}</span>
+                </>}
+              </div>
+
+              {!currentNid?(
+                <div className="welcome">
+                  <Logo size={58}/>
+                  <h2>Welcome to NoteVault</h2>
+                  <p>Write notes, embed images & videos, and download as PDF or Word.</p>
+                  <div className="welcome-path">
+                    <span className="welcome-path-step">📚 Subject</span>
+                    <span className="welcome-path-arrow">→</span>
+                    <span className="welcome-path-step">📑 Chapter</span>
+                    <span className="welcome-path-arrow">→</span>
+                    <span className="welcome-path-step">📝 Note</span>
+                  </div>
+                  <div style={{display:"flex",gap:10,marginTop:10,flexWrap:"wrap",justifyContent:"center"}}>
+                    <div style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 16px",fontSize:".78rem",textAlign:"center"}}>
+                      <div style={{fontSize:"1.4rem",marginBottom:4}}>🖼️</div>
+                      <div style={{fontWeight:600,color:"var(--text)"}}>Upload Media</div>
+                      <div style={{color:"var(--sub)",fontSize:".68rem"}}>Images & Videos</div>
+                    </div>
+                    <div style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 16px",fontSize:".78rem",textAlign:"center"}}>
+                      <div style={{fontSize:"1.4rem",marginBottom:4}}>📄</div>
+                      <div style={{fontWeight:600,color:"var(--text)"}}>Download PDF</div>
+                      <div style={{color:"var(--sub)",fontSize:".68rem"}}>Beautifully formatted</div>
+                    </div>
+                    <div style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 16px",fontSize:".78rem",textAlign:"center"}}>
+                      <div style={{fontSize:"1.4rem",marginBottom:4}}>📝</div>
+                      <div style={{fontWeight:600,color:"var(--text)"}}>Download Word</div>
+                      <div style={{color:"var(--sub)",fontSize:".68rem"}}>Edit in Microsoft Word</div>
+                    </div>
+                  </div>
+                  <div className="shortcuts">
+                    {[["Ctrl+S","Save"],["Ctrl+N","New Note"],["Ctrl+B","Bold"],["Ctrl+I","Italic"]].map(([k,v])=>(<div key={k} className="shortcut-item"><span className="kbd">{k}</span>{v}</div>))}
+                  </div>
+                </div>
+              ):(
+                <div ref={editorRef} className="editor-area fade-in"
+                  contentEditable={currentNid?"true":"false"}
+                  data-placeholder="Start writing your notes here… Use 🖼️ Media button to embed images & videos!"
+                  suppressContentEditableWarning spellCheck
+                  onInput={handleEditorInput}/>
+              )}
+
+              {/* Media upload panel — shown below editor when note is open */}
+              <MediaPanel
+                disabled={!currentNid}
+                mediaFiles={mediaFiles}
+                onAdd={handleMediaAdd}
+                onRemove={handleMediaRemove}
+                onInsert={handleMediaInsert}
+              />
+
+              <div className="statusbar">
+                <span className={statusKind}>{status}</span>
+                <span style={{color:"var(--sub)"}}>localStorage · auto-saves every 2s</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
